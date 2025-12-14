@@ -95,3 +95,16 @@ The agent remembers the context of the conversation. To verify this:
 2.  **Ask a Follow-up**: "Is **that** good?"
     -   The agent understands "**that**" refers to "Inflation at 5%" from the previous turn and answers accordingly.
     -   *Note*: Do not ask meta-questions like "What caused that?" immediately if the router interprets it as General. Stick to economic qualifiers ("Is that high?", "What caused the inflation?").
+
+### How to Run the "Evaluation Demo"
+To generate the **"Working Demo Evidence"** required for the prompt (showing Report, Q&A Grounding, and Trends in one go):
+
+1.  **Reset the Database** (Recommended to clear old duplicates):
+    ```bash
+    rm -rf chroma_db
+    ```
+2.  **Run the Evidence Generator**:
+    ```bash
+    python demo_scenario.py > demo_transcript.txt
+    ```
+3.  **Inspect `demo_transcript.txt`**: This file contains the full proof of retrieval grounding.
