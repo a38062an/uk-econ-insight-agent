@@ -1,0 +1,55 @@
+--- 1. SETTING UP MOCK DATABASE ---
+Injecting 'Old Report' (Timestamp: 1765144769)
+Injecting 'New News' (Timestamp: 1765749569)
+Data Injection Complete.
+
+=====================================================================
+          UK ECONOMIC INSIGHT AGENT - WORKING DEMO EVIDENCE          
+=====================================================================
+
+
+--- [SCENARIO 1] GENERATING PERIODIC REPORT ---
+(Simulates the hourly summary task)
+
+[Agent Output - Report Preview]:
+## Executive Summary
+The UK economy is facing a significant challenge with the unexpected jump in inflation to 5.0%, primarily driven by the ongoing energy crisis. This surge has prompted the Bank of England to consider emergency rate hikes to curb the rising prices. The tech sector has been particu...
+(Truncated for brevity)
+(Time: 2.99s)
+
+
+--- [SCENARIO 2] CONVERSATIONAL Q&A WITH MEMORY ---
+
+[Turn 1] User: 'What is the inflation rate?'
+   [GROUNDING CHECK] Retrieved Chunks:
+   - Chunk 1:      ## Market Report (7 Days Ago)     ## Major Developments     - Inflation is ...
+   - Chunk 2:      BREAKING: Inflation jumps unexpectedly to 5.0% due to energy crisis.     Ba...
+Router Decision: FACT_LOOKUP
+   [Agent]: The inflation rate is a bit of a mixed picture at the moment. According to a recent Market Report from 7 days ago, inflation was stable at 2.0%. However, there's been a breaking development that inflation has jumped unexpectedly to 5.0% due to an energy crisis. It's worth noting that this new information seems to be a more recent update, potentially overriding the previous stable rate. I'd recommend keeping an eye on further announcements from the Bank of England, as they're actively discussing emergency rate hikes in response to this change.
+
+[Turn 2] User: 'Is that good?' (Testing Memory of 'Inflation')
+   [GROUNDING CHECK] Retrieval for 'Is that good?':
+   - Chunk 1: 
+    ## Market Report (7 Days Ago)
+    #...
+   - Chunk 2: 
+    BREAKING: Inflation jumps unexpecte...
+Router Decision: FACT_LOOKUP
+   [Agent]: The recent inflation rate jump to 5.0% is likely not good, as it's a significant increase from the previously stable rate of 2.0% mentioned in the Market Report from 7 days ago. This sudden change is attributed to an energy crisis, and it's causing concern among investors, as evident from the plummeting tech stocks. The Bank of England's consideration of emergency rate hikes also suggests that this development is being taken seriously. It's a complex situation, and I'd recommend monitoring further updates from the Bank of England for a more detailed understanding of how this might impact the economy.
+
+
+--- [SCENARIO 3] QUERY-AWARE TREND ANALYSIS ---
+
+[Turn 3] User: 'How is inflation trending compared to last week?'
+(Triggering analyze_trend logic...)
+
+   [Agent Output - Trend Analysis]:
+Here are the major shifts or changes related to "market report economy":
+
+* **Inflation Rate**: Old - 2.0% (stable), New - 5.0% (unexpected jump) due to energy crisis, indicating a significant increase in inflation.
+* **Bank of England's Monetary Policy**: Old - considering cutting rates, New - actively discussing emergency rate hikes, showing a reversal in the central bank's stance.
+* **Tech Stock Performance**: Old - flat, New - plummeting, indicating a sharp decline in tech stocks due to investor panic, which can have broader implications for the overall market and economy.
+
+=====================================================================
+                      END OF DEMO TRANSCRIPT                         
+=====================================================================
