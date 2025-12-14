@@ -1,8 +1,19 @@
+# Python & Cache
 __pycache__/
 *.pyc
-.DS_Store
-.env
-.venv/
+
+# Virtual Environments
 venv/
+.venv/
+
+# Environment Variables (Secrets)
+.env
+
+# ChromaDB (Vector Store Persistence)
 chroma_db/
+
+# Generated Artifacts
 reports/
+
+# Mac OS
+.DS_Store

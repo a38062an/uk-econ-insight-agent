@@ -3,6 +3,8 @@ import logging
 import glob
 # Silence ChromaDB Logger
 logging.getLogger('chromadb').setLevel(logging.ERROR)
+from dotenv import load_dotenv
+load_dotenv()
 
 import streamlit as st
 from datetime import datetime, timedelta
@@ -33,13 +35,12 @@ def run_periodic_ingestion() -> None:
         state.last_ingestion_time = now
         st.session_state.last_run_display = now.strftime("%H:%M")
          
-        if "api_key" in st.session_state and st.session_state.api_key:
-            try:
-                print("Auto-generating report...")
-                report = orchestrator.generate_report(st.session_state.api_key)
-                orchestrator.save_report(report)
-            except Exception as e:
-                print(f"Auto-report failed: {e}")
+        try:
+            print("Auto-generating report...")
+            report = orchestrator.generate_report()
+            orchestrator.save_report(report)
+        except Exception as e:
+            print(f"Auto-report failed: {e}")
         
     else:
         if state.last_ingestion_time:
@@ -69,14 +70,6 @@ st.title("UK Economic Insight Agent")
 
 with st.sidebar:
     st.header("Controls")
-    
-    # API Key Input
-    user_api_key = st.text_input("Groq API Key (Optional)", type="password")
-    if user_api_key:
-        st.session_state.api_key = user_api_key
-    
-    # Use the session state key if available
-    api_key = st.session_state.get("api_key", "")
     
     st.divider()
     
@@ -122,11 +115,15 @@ with tab_chat:
     if user_query:
         st.session_state.messages.append({"role": "user", "content": user_query})        
 
-        if not api_key:
-            model_response = "Please enter your Groq API Key in the sidebar."
-        else:
-            with st.spinner("Thinking..."):
-                model_response = orchestrator.answer_question(user_query, api_key)
+        # Improve Memory: Retrieve last 3 user/assistant interactions for context
+        history_context = ""
+        recent_history = st.session_state.messages[-6:] # Last 3 turns (User+AI * 3)
+        for msg in recent_history:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            history_context += f"{role}: {msg['content']}\n"
+
+        with st.spinner("Thinking..."):
+            model_response = orchestrator.answer_question(user_query, history_context)
         
         st.session_state.messages.append({"role": "assistant", "content": model_response})
         
@@ -136,14 +133,11 @@ with tab_chat:
 with tab_report:
     st.subheader("Market Reports")
     if st.button("Generate New Report"):
-        if not api_key:
-            st.warning("Please provide an API Key.")
-        else:
-            with st.spinner("Analyzing recent data..."):
-                report = orchestrator.generate_report(api_key)
-                saved_path = orchestrator.save_report(report)
-                st.success(f"Report saved to {saved_path}")
-                st.markdown(report)
+        with st.spinner("Analyzing recent data..."):
+            report = orchestrator.generate_report()
+            saved_path = orchestrator.save_report(report)
+            st.success(f"Report saved to {saved_path}")
+            st.markdown(report)
     
     st.divider()
     
