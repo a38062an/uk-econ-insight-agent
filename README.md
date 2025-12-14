@@ -9,7 +9,7 @@ This agent distinguishes itself by treating **Time** as a first-class citizen. I
 graph TD
     subgraph Data Pipeline
         A[BBC / Guardian / Sky] -->|Fetch| B[data_ingestion.py]
-        B -->|Extract Entities (spaCy)| C[Metadata]
+        B -->|"Extract Entities (spaCy)"| C[Metadata]
         B -->|Add Timestamp| D[ChromaDB]
     end
 
