@@ -21,11 +21,9 @@ graph TD
         G -->|'FACT_LOOKUP'| J[Answer Question]
     end
 
-    subgraph Memory
-        D[(Vector Store)]
-        H -->|Save Report| D
-        I -->|Fetch Last Report| D
-    end
+    H -->|Save Report| D[(ChromaDB)]
+    I -->|Fetch Last Report| D
+    J -->|Retrieve Context| D
 ```
 
 ## 2. The Components (Files)
