@@ -5,6 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.documents import Document
 from src.prompts import FACT_PROMPT, SUMMARY_PROMPT, ROUTER_PROMPT, TREND_PROMPT
+from src.models import get_embedding_model
 from datetime import datetime, timedelta
 from chromadb.config import Settings
 import os
@@ -33,13 +34,25 @@ def get_llm() -> Optional[ChatGroq]:
         model_name="llama-3.3-70b-versatile"
     )
 
+# Cached vectorstore instance (singleton pattern)
+_vectorstore_instance = None
+
 def get_vectorstore() -> Chroma:
     """
-    Load the ChromaDB vector store.
+    Load the ChromaDB vector store using singleton pattern.
+    Avoids re-initialization on every function call.
     """
-
-    embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    return Chroma(persist_directory=DB_PATH, embedding_function=embedding_function, client_settings=Settings(anonymized_telemetry=False, is_persistent=True))
+    global _vectorstore_instance
+    if _vectorstore_instance is None:
+        print("Initializing vectorstore...")
+        embedding_function = get_embedding_model()
+        _vectorstore_instance = Chroma(
+            persist_directory=DB_PATH, 
+            embedding_function=embedding_function, 
+            client_settings=Settings(anonymized_telemetry=False, is_persistent=True)
+        )
+        print("Vectorstore loaded")
+    return _vectorstore_instance
 
 def classify_intent(query: str) -> str:
     """Uses LLM to route the query to FACT_LOOKUP, TREND_ANALYSIS, or SUMMARY."""

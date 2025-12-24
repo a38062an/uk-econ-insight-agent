@@ -8,7 +8,8 @@ load_dotenv()
 
 import streamlit as st
 from datetime import datetime, timedelta
-from src import orchestrator, data_ingestion
+from src import orchestrator
+from src.models import get_spacy_model, get_embedding_model
 import glob
 
 class GlobalState:
@@ -19,8 +20,33 @@ class GlobalState:
 def get_global_state() -> GlobalState:
     return GlobalState()
 
+@st.cache_resource
+def initialize_models():
+    """Pre-load all models at app startup to eliminate cold-start latency.
+    
+    Cached by Streamlit and shared across all sessions.
+    """
+    print("=" * 60)
+    print("INITIALIZING MODELS")
+    print("=" * 60)
+    
+    # Pre-load Spacy model
+    _ = get_spacy_model()
+    
+    # Pre-load Embedding model
+    _ = get_embedding_model()
+    
+    # Pre-load Vectorstore (connects to ChromaDB)
+    _ = orchestrator.get_vectorstore()
+    
+    print("=" * 60)
+    print("ALL MODELS READY")
+    print("=" * 60)
+    return True
+
 def run_periodic_ingestion() -> None:
     """Checks if it's time to run ingestion (every 1 hour). Uses Global State."""
+    from src import data_ingestion
     state = get_global_state()
     now = datetime.now()
     
@@ -48,8 +74,9 @@ def run_periodic_ingestion() -> None:
 
 def manual_refresh() -> None:
     """Forces an immediate refresh."""
+    from src import data_ingestion
     state = get_global_state()
-    state.last_ingestion_time = None # Reset global time to force run
+    state.last_ingestion_time = None
     run_periodic_ingestion()
 
 st.set_page_config(
@@ -57,6 +84,9 @@ st.set_page_config(
     page_icon=None,
     layout="wide"
 )
+
+# Initialize all models at startup (cached, runs once)
+initialize_models()
 
 # Initialize Session State Variables that depend on Global State
 if 'last_run_display' not in st.session_state:
