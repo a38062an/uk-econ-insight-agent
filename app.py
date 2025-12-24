@@ -111,7 +111,7 @@ with st.sidebar:
         os.environ["GROQ_API_KEY"] = user_api_key
         st.success("API key configured!")
     elif not os.getenv("GROQ_API_KEY"):
-        st.warning("⚠️ Please enter your Groq API key to use the chat feature")
+        st.warning("Please enter your Groq API key to use the chat feature")
     
     st.divider()
     
@@ -169,7 +169,7 @@ with tab_chat:
                 model_response = orchestrator.answer_question(user_query, history_context)
             except Exception as e:
                 if "authentication" in str(e).lower() or "api" in str(e).lower():
-                    model_response = "⚠️ API key not configured. Please add GROQ_API_KEY to Streamlit secrets (Settings > Secrets)."
+                    model_response = "API key not configured. Please add GROQ_API_KEY to Streamlit secrets (Settings > Secrets)."
                 else:
                     model_response = f"An error occurred: {str(e)}"
         
