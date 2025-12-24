@@ -101,6 +101,18 @@ st.title("UK Economic Insight Agent")
 with st.sidebar:
     st.header("Controls")
     
+    # API Key Input
+    user_api_key = st.text_input(
+        "Groq API Key", 
+        type="password",
+        help="Enter your Groq API key. Get one free at https://console.groq.com"
+    )
+    if user_api_key:
+        os.environ["GROQ_API_KEY"] = user_api_key
+        st.success("API key configured!")
+    elif not os.getenv("GROQ_API_KEY"):
+        st.warning("⚠️ Please enter your Groq API key to use the chat feature")
+    
     st.divider()
     
     # Status
@@ -153,7 +165,13 @@ with tab_chat:
             history_context += f"{role}: {msg['content']}\n"
 
         with st.spinner("Thinking..."):
-            model_response = orchestrator.answer_question(user_query, history_context)
+            try:
+                model_response = orchestrator.answer_question(user_query, history_context)
+            except Exception as e:
+                if "authentication" in str(e).lower() or "api" in str(e).lower():
+                    model_response = "⚠️ API key not configured. Please add GROQ_API_KEY to Streamlit secrets (Settings > Secrets)."
+                else:
+                    model_response = f"An error occurred: {str(e)}"
         
         st.session_state.messages.append({"role": "assistant", "content": model_response})
         
