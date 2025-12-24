@@ -12,13 +12,7 @@ def get_spacy_model():
     """Singleton accessor for Spacy model. Loads once, returns cached instance."""
     global _nlp_instance
     if _nlp_instance is None:
-        try:
-            _nlp_instance = spacy.load("en_core_web_sm")
-        except OSError:
-            print("Downloading spaCy model...")
-            from spacy.cli import download
-            download("en_core_web_sm")
-            _nlp_instance = spacy.load("en_core_web_sm")
+        _nlp_instance = spacy.load("en_core_web_sm")
         print("Spacy model loaded into memory (singleton)")
     return _nlp_instance
 
