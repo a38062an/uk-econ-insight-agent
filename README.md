@@ -205,7 +205,7 @@ See `requirements.txt` for complete list.
 uk-econ-insight-agent/
 ├── app.py                  # Streamlit application
 ├── src/
-│   ├── __init__.py
+│   ├── models.py           # Singleton model instances
 │   ├── orchestrator.py     # Core logic and routing
 │   ├── data_ingestion.py   # RSS fetching and processing
 │   ├── prompts.py          # LLM prompt templates
@@ -213,190 +213,30 @@ uk-econ-insight-agent/
 ├── reports/                # Generated market reports
 ├── chroma_db/             # Vector database storage
 ├── requirements.txt        # Python dependencies
-├── .env                   # Environment variables (not in git)
-└── README.md              # This file
+└── .env                   # Environment variables (not in git)
 ```
+
+## Deployment
+
+Deployed on [Streamlit Cloud](https://streamlit.io/cloud). To deploy your own:
+
+1. Push to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Click "New app" and connect your repo
+4. Add `GROQ_API_KEY` to secrets (optional - users can provide their own)
+5. Deploy
 
 ## Future Enhancements
 
-Potential improvements for production deployment:
-
-1. **Microservice Architecture**: Deploy spaCy/embedding models as separate FastAPI services
-2. **Task Queue**: Use Celery or Airflow for distributed ingestion
-3. **Managed Vector DB**: Migrate to Pinecone or Weaviate for scalability
-4. **Rate Limiting**: Add backoff for RSS feed requests
-5. **Monitoring**: Implement Prometheus metrics for latency tracking
-6. **Alternative Extractors**: Replace newspaper3k with Trafilatura for better reliability
+1. Microservice architecture for model serving
+2. Distributed task queue (Celery/Airflow) for ingestion
+3. Managed vector database (Pinecone/Weaviate)
+4. Rate limiting and monitoring
+5. Alternative article extractors (Trafilatura)
 
 ## License
 
 This project is for educational and portfolio purposes.
-
----
-
-## Developer Notes
-
-### Asyncio Implementation
-
-This project uses Python's `asyncio` library for concurrent RSS feed fetching. Here's how it works:
-
-#### Why Asyncio?
-
-Sequential feed fetching is blocking:
-```python
-# Old approach: Sequential (slow)
-for feed_url in RSS_FEEDS:
-    feed = feedparser.parse(feed_url)  # Blocks here
-    # Process articles...
-```
-
-If each feed takes 10 seconds, 3 feeds take 30 seconds total.
-
-#### Concurrent Approach
-
-With asyncio, we can fetch all feeds simultaneously:
-
-```python
-# New approach: Concurrent (fast)
-async def fetch_feed_async(feed_url):
-    # Fetch and process feed
-    return documents
-
-async def fetch_all_feeds_concurrent():
-    tasks = [fetch_feed_async(url) for url in RSS_FEEDS]
-    results = await asyncio.gather(*tasks)
-    return results
-```
-
-Now 3 feeds complete in ~10 seconds (time of slowest feed), not 30 seconds.
-
-#### Key Concepts
-
-**1. Async Functions**
-```python
-async def my_function():
-    # Can use 'await' inside
-    result = await some_async_operation()
-    return result
-```
-
-**2. Await**
-```python
-# Yields control while waiting for I/O
-result = await async_function()
-```
-
-**3. Gather (run multiple coroutines concurrently)**
-```python
-results = await asyncio.gather(
-    fetch_feed_async(url1),
-    fetch_feed_async(url2),
-    fetch_feed_async(url3)
-)
-```
-
-**4. ThreadPoolExecutor (for blocking I/O)**
-```python
-# newspaper3k is blocking, so run it in a thread
-loop = asyncio.get_event_loop()
-with ThreadPoolExecutor() as executor:
-    result = await loop.run_in_executor(executor, blocking_function, args)
-```
-
-#### Running Async Code
-
-To call async functions from sync code:
-```python
-# Entry point
-def fetch_and_process_feed():
-    return asyncio.run(fetch_all_feeds_concurrent())
-```
-
-`asyncio.run()` creates an event loop, runs the coroutine, and closes the loop.
-
-### Singleton Pattern
-
-The singleton pattern ensures a class has only one instance and provides global access:
-
-```python
-_instance = None
-
-def get_instance():
-    global _instance
-    if _instance is None:
-        _instance = ExpensiveObject()  # Load only once
-    return _instance
-```
-
-**Benefits**:
-- Expensive resources loaded once
-- Shared state across application
-- Reduced memory footprint
-
-**Used for**:
-- spaCy NLP model (large)
-- HuggingFace embeddings (90MB)  
-- ChromaDB connection
-
----
-
-**Built for AI Engineer interviews at Data Reply**
-
-```mermaid
-graph TD
-    subgraph Data Pipeline
-        A[BBC / Guardian / Sky] -->|Fetch| B[data_ingestion.py]
-        B -->|"Extract Entities (spaCy)"| C[Metadata]
-        B -->|Add Timestamp| D[ChromaDB]
-    end
-
-    subgraph Orchestration
-        E[User Query] -->|app.py| F[orchestrator.py]
-        F -->|Classify Intent| G{Router}
-        G -->|'SUMMARY'| H[Generate Periodic Report]
-        G -->|'TREND'| I[Analyze Trends]
-        G -->|'FACT_LOOKUP'| J[Answer Question]
-    end
-
-    H -->|Save Report| D[(ChromaDB)]
-    I -->|Fetch Last Report| D
-    J -->|Retrieve Context| D
-```
-
-## 2. The Components (Files)
-
-### `src/orchestrator.py`
-Central logic handler.
-- **Router**: Classifies user queries into Reporting, Trend Analysis, or Fact Lookup.
-- **Time-Aware Retrieval**:
-    -   **Reporting**: Fetches latest 10 news items sorted by timestamp.
-    -   **Trends**: Filters for news published *after* the last generated report.
-    -   **Topic Awareness**: Filters trend analysis by specific user topics (e.g., "Inflation").
-    -   *Note*: The Router is strict. Questions like "What did you just say?" are classified as **General** (non-economic) and receive a standard greeting. To test memory, ask **Economic Follow-ups** (see below).
-
-### `src/data_ingestion.py`
-Handles data fetching and processing.
-1.  **Fetch**: Pulls from BBC, Guardian, and Sky News RSS feeds.
-2.  **Chunk**: Uses Semantic Chunking (via embeddings) to split text by meaning.
-3.  **Timestamp**: Adds Unix timestamps to metadata for time-based filtering.
-4.  **Tag**: Uses spaCy to extract entities (Organizations, People) efficiently.
-
-### `src/prompts.py`
-LLM instructions for different tasks:
--   **`ROUTER_PROMPT`**: Determines user intent.
--   **`SUMMARY_PROMPT`**: Generates bulleted market summaries. Handles **conflicting reports** by explicitly noting discrepancies.
--   **`TREND_PROMPT`**: Compares two text contexts to identify shifts.
--   **`FACT_PROMPT`**: Answers specific questions based on retrieved chunks. 
-    -   *Fallback*: If no economic data is found, it safely admits ignorance. If the question is general (e.g., "What is 2+2?"), it answers directly without retrieval.
-
-### `app.py`
-Streamlit web interface.
--   Manages secret keys securely via `.env`.
--   Runs the hourly ingestion scheduler.
--   Displays generated reports and interactive chat history.
-
-## 3. How "Periodic Reporting" Works
-Unlike standard RAG which searches for "Keywords", our Reporting Engine is **Chronological**.
 
 1.  **Search**: We query the database for "UK Economy market updates" with a broad scope (`k=20`).
 2.  **Sort**: We use Python to sort these results by their metadata `timestamp` (Newest First).
