@@ -451,3 +451,7 @@ To generate the **"Working Demo Evidence"** required for the prompt (showing Rep
     python demo_scenario.py > demo_transcript.txt
     ```
 3.  **Inspect `demo_transcript.txt`**: This file contains the full proof of retrieval grounding.
+
+
+## Streamlit link
+[Streamlit Link](https://uk-econ-insight-agent-sgpgg4jbtty5dneeptjn9i.streamlit.app)
